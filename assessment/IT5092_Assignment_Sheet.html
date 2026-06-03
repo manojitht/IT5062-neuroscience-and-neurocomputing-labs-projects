@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT5092 — Assignment: SNN for MNIST</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Source+Code+Pro:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --blue:    #1a4f8a;
+    --lblue:   #e8f0fb;
+    --green:   #14532d;
+    --lgreen:  #f0fdf4;
+    --amber:   #78350f;
+    --lamber:  #fffbeb;
+    --red:     #7f1d1d;
+    --lred:    #fef2f2;
+    --gray:    #374151;
+    --lgray:   #f9fafb;
+    --border:  #d1d5db;
+    --mark:    #fef9c3;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 11pt;
+    line-height: 1.7;
+    color: #1f2937;
+    background: white;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 28px 36px 60px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    border-top: 5px solid var(--blue);
+    padding-top: 20px;
+    margin-bottom: 28px;
+  }
+  .header .module { font-family: 'Inter', sans-serif; font-size: 9.5pt; font-weight: 600; color: var(--blue); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  .header h1 { font-size: 20pt; font-weight: 700; color: #111827; line-height: 1.25; }
+  .header h2 { font-size: 13pt; font-weight: 600; color: var(--blue); margin-top: 4px; }
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .meta-box { background: var(--lgray); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; }
+  .meta-box .label { font-family: 'Inter', sans-serif; font-size: 8pt; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .06em; }
+  .meta-box .value { font-family: 'Inter', sans-serif; font-size: 10.5pt; font-weight: 600; color: #111827; margin-top: 2px; }
+
+  /* ── SECTION HEADINGS ── */
+  h2.section {
+    font-family: 'Inter', sans-serif;
+    font-size: 13pt;
+    font-weight: 700;
+    color: white;
+    background: var(--blue);
+    padding: 8px 14px;
+    border-radius: 5px;
+    margin: 32px 0 16px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-family: 'Inter', sans-serif;
+    font-size: 11pt;
+    font-weight: 700;
+    color: var(--blue);
+    margin: 22px 0 8px;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-family: 'Inter', sans-serif;
+    font-size: 10pt;
+    font-weight: 600;
+    color: var(--gray);
+    margin: 14px 0 6px;
+  }
+
+  /* ── TODO BOXES ── */
+  .todo {
+    border: 1.5px solid var(--blue);
+    border-left: 5px solid var(--blue);
+    border-radius: 6px;
+    background: var(--lblue);
+    padding: 14px 18px;
+    margin: 18px 0;
+    page-break-inside: avoid;
+  }
+  .todo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .todo-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 11pt;
+    font-weight: 700;
+    color: var(--blue);
+  }
+  .marks-badge {
+    font-family: 'Inter', sans-serif;
+    font-size: 9pt;
+    font-weight: 700;
+    background: var(--blue);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 20px;
+  }
+
+  /* ── QUESTION BOXES ── */
+  .question {
+    border: 1.5px solid #6b7280;
+    border-left: 5px solid #6b7280;
+    border-radius: 6px;
+    background: var(--lgray);
+    padding: 12px 16px;
+    margin: 12px 0;
+    page-break-inside: avoid;
+  }
+  .question .q-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 9pt;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 5px;
+  }
+
+  /* ── CALLOUT BOXES ── */
+  .callout {
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 14px 0;
+    page-break-inside: avoid;
+  }
+  .callout.info    { background: var(--lblue);  border-left: 4px solid var(--blue);  }
+  .callout.tip     { background: var(--lgreen); border-left: 4px solid #16a34a; }
+  .callout.warning { background: var(--lamber); border-left: 4px solid #d97706; }
+  .callout.bio     { background: #f5f3ff;       border-left: 4px solid #7c3aed; }
+  .callout .callout-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 9pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 5px;
+  }
+  .callout.info    .callout-title { color: var(--blue); }
+  .callout.tip     .callout-title { color: #15803d; }
+  .callout.warning .callout-title { color: #b45309; }
+  .callout.bio     .callout-title { color: #6d28d9; }
+
+  /* ── STEPS ── */
+  .steps { list-style: none; padding: 0; margin: 10px 0; }
+  .steps li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    page-break-inside: avoid;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 22px; height: 22px;
+    background: var(--blue);
+    color: white;
+    border-radius: 50%;
+    font-family: 'Inter', sans-serif;
+    font-size: 9pt;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 2px;
+  }
+
+  /* ── CODE ── */
+  code {
+    font-family: 'Source Code Pro', 'Courier New', monospace;
+    font-size: 9.5pt;
+    background: #f3f4f6;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #be123c;
+  }
+  pre {
+    font-family: 'Source Code Pro', 'Courier New', monospace;
+    font-size: 9pt;
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 14px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 10px 0;
+    line-height: 1.5;
+  }
+  pre .comment { color: #94a3b8; }
+  pre .kw      { color: #93c5fd; }
+  pre .str     { color: #86efac; }
+  pre .num     { color: #fda4af; }
+
+  /* ── TABLE ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 10pt;
+  }
+  th {
+    background: var(--blue);
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 9pt;
+    font-weight: 600;
+    padding: 8px 12px;
+    text-align: left;
+  }
+  td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: var(--lgray); }
+
+  /* ── MARKS SUMMARY ── */
+  .marks-row td:last-child { font-family: 'Inter', sans-serif; font-weight: 700; color: var(--blue); text-align: right; }
+  .marks-total { background: var(--lblue) !important; font-weight: 700; }
+  .marks-total td { border-top: 2px solid var(--blue); }
+
+  /* ── MATH ── */
+  .math {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 10pt;
+    background: var(--lgray);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 16px;
+    margin: 10px 0;
+    text-align: center;
+    color: #111827;
+  }
+
+  /* ── ASCII diagram ── */
+  .diagram {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 9pt;
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 16px 20px;
+    border-radius: 6px;
+    margin: 12px 0;
+    white-space: pre;
+    line-height: 1.6;
+  }
+
+  /* ── ANSWER SPACE ── */
+  .answer-space {
+    border: 1.5px dashed var(--border);
+    border-radius: 6px;
+    background: #fafafa;
+    padding: 12px 16px;
+    margin-top: 10px;
+    min-height: 60px;
+  }
+  .answer-space .hint {
+    font-family: 'Inter', sans-serif;
+    font-size: 8.5pt;
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  /* ── SUBMISSION RULES ── */
+  .rules { background: var(--lred); border: 1.5px solid #fca5a5; border-radius: 6px; padding: 14px 18px; margin: 18px 0; }
+  .rules ul { padding-left: 20px; margin-top: 6px; }
+  .rules li { margin-bottom: 4px; }
+
+  /* ── MISC ── */
+  p { margin-bottom: 8px; }
+  ul, ol { padding-left: 22px; margin-bottom: 8px; }
+  li { margin-bottom: 4px; }
+  .ref { font-style: italic; font-size: 10pt; color: #4b5563; }
+  .provided-tag {
+    font-family: 'Inter', sans-serif;
+    font-size: 8pt;
+    font-weight: 600;
+    background: #d1fae5;
+    color: #065f46;
+    padding: 1px 8px;
+    border-radius: 20px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+
+  .todo-tag {
+    font-family: 'Inter', sans-serif;
+    font-size: 8pt;
+    font-weight: 600;
+    background: #fae7d1;
+    color: #be123c;
+    padding: 1px 8px;
+    border-radius: 20px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+
+  /* ── PRINT ── */
+  @media print {
+    body { padding: 10px 20px; font-size: 10.5pt; }
+    h2.section { break-before: avoid; }
+    .todo, .question, .callout { break-inside: avoid; }
+    @page { margin: 18mm 16mm; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ HEADER -->
+<div class="header">
+  <div class="module">IT5092 — Neuroscience &amp; Neurocomputing</div>
+  <h1>Assignment: Spiking Neural Network<br>for MNIST Digit Classification</h1>
+  <h2>Assignment Sheet &amp; Guidance</h2>
+
+  <div class="meta-grid">
+    <div class="meta-box">
+      <div class="label">Type</div>
+      <div class="value">Individual Assignment</div>
+    </div>
+    <div class="meta-box">
+      <div class="label">Total Marks</div>
+      <div class="value">100 marks</div>
+    </div>
+    <div class="meta-box">
+      <div class="label">Submission</div>
+      <div class="value">One <code>.ipynb</code> file</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ LEARNING OUTCOMES -->
+<h2 class="section">Learning Outcomes</h2>
+<p>By completing this assignment you will:</p>
+<ol>
+  <li>Implement a conductance-based Leaky Integrate-and-Fire (LIF) network in <strong>Brian2</strong></li>
+  <li>Apply <strong>Spike-Timing-Dependent Plasticity (STDP)</strong> for unsupervised feature learning</li>
+  <li>Replicate the core architecture from <strong>Diehl &amp; Cook (2015)</strong> and observe how it classifies MNIST digits without any labelled training signal</li>
+  <li>Connect biological learning mechanisms to the computational concepts from Weeks 3, 4, and 7</li>
+</ol>
+<p class="ref" style="margin-top:10px;">
+  <strong>Reference:</strong> Diehl, P.U. &amp; Cook, M. (2015). <em>Unsupervised learning of digit recognition using spike-timing-dependent plasticity.</em> Frontiers in Computational Neuroscience, 9, 99.
+</p>
+
+<!-- SUBMISSION RULES -->
+<div class="rules">
+  <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:10pt;color:#991b1b;margin-bottom:6px;">⚠ Submission Rules</div>
+  <ul>
+    <li>All cells must run <strong>top-to-bottom without errors</strong> before submission</li>
+    <li>All TODO cells must be attempted</li>
+    <li>Written analysis must be placed in <strong>Markdown cells</strong></li>
+    <li>Do <strong>not</strong> modify <strong>provided</strong> cells or change values in <code>config.py</code></li>
+  </ul>
+</div>
+
+<!-- MARKS SUMMARY -->
+<h3>Mark Allocation</h3>
+<table>
+  <thead><tr><th>TODO</th><th>Section</th><th>Marks</th></tr></thead>
+  <tbody class="marks-row">
+    <tr><td>TODO 1</td><td>Excitatory Neuron Group</td><td style="text-align:right">10</td></tr>
+    <tr><td>TODO 2</td><td>Inhibitory Neuron Group</td><td style="text-align:right">10</td></tr>
+    <tr><td>TODO 3</td><td>Input→Excitatory STDP Synapses</td><td style="text-align:right">25</td></tr>
+    <tr><td>TODO 4</td><td>Fixed Exc↔Inh Synapses</td><td style="text-align:right">5</td></tr>
+    <tr><td>TODO 5</td><td>Training Loop</td><td style="text-align:right">15</td></tr>
+    <tr><td>TODO 6</td><td>Test Phase</td><td style="text-align:right">15</td></tr>
+    <tr><td>—</td><td>Visualisation (Plots)</td><td style="text-align:right">5</td></tr>
+    <tr><td>TODO 7</td><td>Written Analysis (5 questions)</td><td style="text-align:right">15</td></tr>
+    <tr class="marks-total"><td colspan="2"><strong>Total</strong></td><td style="text-align:right"><strong>100</strong></td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ HOW TO USE THIS SHEET -->
+<h2 class="section">How to Use This Sheet</h2>
+<p>Work through this document <strong>alongside the notebook</strong> <code>IT5092_Assignment_MNIST.ipynb</code>. Each section below corresponds directly to a section in the notebook. Read the explanation here first, then implement in the notebook.</p>
+<div class="callout tip">
+  <div class="callout-title">💡 Tip</div>
+  The notebook already has all parameters imported from <code>config.py</code> and all utility functions imported from <code>utils/</code>. Your job is to fill in the TODO cells — the surrounding code is there to guide you.
+</div>
+
+<!-- ═══════════════════════════════════════════ SECTION 0 -->
+<h2 class="section">Section 0: Brian2 Quick Introduction <span class="provided-tag">PROVIDED</span></h2>
+<p>The first working cell in the notebook contains a self-contained Brian2 example: a single LIF neuron driven by a constant current. Run it to verify your environment is set up correctly. Study how Brian2 string equations, units, and <code>NeuronGroup</code> work — you will use the same patterns throughout.</p>
+
+<!-- ═══════════════════════════════════════════ SECTION 1 -->
+<h2 class="section">Section 1: Load MNIST Data <span class="provided-tag">PROVIDED</span></h2>
+<p>MNIST is a dataset of 70,000 handwritten digit images (28×28 pixels, greyscale). The notebook loads 1,000 training images and 50 test images from the <code>utils/mnist_loader.py</code> utility and visualises a sample alongside the rate-encoding scheme.</p>
+
+<div class="callout bio">
+  <div class="callout-title">🧠 Biological Motivation: Rate Coding</div>
+  <p>Each pixel intensity (0–255) is converted to a Poisson spike rate. This mimics how sensory neurons encode stimulus intensity through their firing rate — a concept introduced in Week 3 (Poisson spike trains). A black pixel (0) produces a silent neuron; a white pixel (255) produces ~64 Hz of random spiking.</p>
+</div>
+<div class="math">rate (Hz) = pixel / 8.0 × INPUT_INTENSITY_BASE &nbsp;&nbsp; → &nbsp;&nbsp; max rate ≈ 63.75 Hz</div>
+
+<!-- ═══════════════════════════════════════════ SECTION 2 -->
+<h2 class="section">Section 2: Network Architecture</h2>
+<p>The network replicates Diehl &amp; Cook (2015) exactly. Familiarise yourself with the architecture before implementing any code.</p>
+
+<div class="diagram">                    PLASTIC (STDP)
+  784 PoissonGroup ──────────────────► 400 Excitatory LIF
+   (one per pixel)                          │        ▲
+                                     i==j   │        │  i≠j
+                                     fixed  ▼        │  fixed
+                                       400 Inhibitory LIF</div>
+
+<table>
+  <thead><tr><th>Component</th><th>Biological Motivation</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Conductance-based LIF</strong></td><td>Synaptic input opens ion channels; current depends on voltage relative to reversal potential (Week 4)</td></tr>
+    <tr><td><strong>STDP on Input→Exc</strong></td><td>Hebbian learning with causal timing: pre fires before post → strengthen (Week 7 + time direction)</td></tr>
+    <tr><td><strong>One-to-one Exc→Inh</strong></td><td>Each excitatory neuron activates its own dedicated inhibitory partner</td></tr>
+    <tr><td><strong>Lateral Inh→Exc (i≠j)</strong></td><td>Winner-take-all: when one neuron fires, it suppresses all others via their inhibitory partner</td></tr>
+    <tr><td><strong>Theta adaptation (θ)</strong></td><td>Intrinsic plasticity: overactive neurons raise their own threshold, distributing load across the population</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ SECTION 3 -->
+<h2 class="section">Section 3: Building the Network <span class="todo-tag">TODO</span></h2>
+
+<!-- TODO 1 -->
+<div class="todo">
+  <div class="todo-header">
+    <span class="todo-title">TODO 1 — Excitatory Neuron Group</span>
+    <span class="marks-badge">10 marks</span>
+  </div>
+
+  <p>Build the main learning population: 400 LIF neurons with conductance-based synaptic input and an adaptive spiking threshold (θ).</p>
+
+  <div class="callout bio">
+    <div class="callout-title">🧠 The Adaptive Threshold?</div>
+    <p>If a neuron fires too frequently, θ grows, raising its effective threshold and making it harder to fire again. This is <strong>intrinsic plasticity</strong> — the neuron regulates its own excitability. The very slow decay (τ_θ = 10⁷ ms ≈ 2.8 hours) means θ accumulates across the entire training session, permanently depressing overactive neurons and ensuring different neurons specialise on different digit patterns.</p>
+  </div>
+
+  <h4>Steps to implement</h4>
+  <ul class="steps">
+    <li><span class="step-num">a</span><div><strong>Verify the equation string.</strong> The template in the notebook has all four ODEs. Check they match the description above.</div></li>
+    <li><span class="step-num">b</span><div><strong>Create the NeuronGroup.</strong> Fill in <code>threshold=</code>, <code>reset=</code>, and <code>refractory=REFRAC_E*ms</code> arguments.</div></li>
+    <li><span class="step-num">c</span><div><strong>Initialise state variables.</strong> Set <code>v = V_REST_E*mV</code>, <code>ge = 0</code>, <code>gi = 0</code>, <code>theta = THETA_INIT*mV</code>.</div></li>
+  </ul>
+</div>
+
+<!-- TODO 2 -->
+<div class="todo">
+  <div class="todo-header">
+    <span class="todo-title">TODO 2 — Inhibitory Neuron Group</span>
+    <span class="marks-badge">10 marks</span>
+  </div>
+
+  <p>Build the inhibitory population: 400 simpler LIF neurons — <strong>no adaptive threshold</strong>, faster time constant.</p>
+
+  <h4>Steps to implement</h4>
+  <ul class="steps">
+    <li><span class="step-num">a</span><div><strong>Write <code>eqs_i</code>.</strong> Three ODEs: <code>dv/dt</code>, <code>dge/dt</code>, <code>dgi/dt</code>. Use inhibitory parameters (<code>TAU_M_I</code>, <code>V_REST_I</code>, <code>E_INH_I</code>). No <code>dtheta/dt</code>.</div></li>
+    <li><span class="step-num">b</span><div><strong>Create the NeuronGroup</strong> with <code>N_INHIBITORY</code> neurons, threshold <code>'v &gt; V_THRESH_I'</code>, reset <code>'v = V_RESET_I*mV'</code>, refractory <code>REFRAC_I*ms</code>.</div></li>
+    <li><span class="step-num">c</span><div><strong>Initialise</strong> <code>v = V_REST_I*mV</code>, <code>ge, gi = 0</code>.</div></li>
+  </ul>
+</div>
+
+<!-- TODO 3 -->
+<div class="todo">
+  <div class="todo-header">
+    <span class="todo-title">TODO 3 — Input → Excitatory STDP Synapses</span>
+    <span class="marks-badge">25 marks</span>
+  </div>
+
+  <p>These are the <em>plastic</em> synapses where all learning happens. STDP adjusts weights based on the relative timing of pre- and post-synaptic spikes.</p>
+
+  <h4>STDP Rule (Triplet)</h4>
+
+  <div class="callout bio">
+    <div class="callout-title">🧠 Spike-Timing-Dependent Plasticity</div>
+    <p>Classical STDP: if a pre-synaptic spike arrives <em>before</em> a post-synaptic spike (causal), the synapse is strengthened (LTP). If post fires before pre (anti-causal), the synapse is weakened (LTD). Here a triplet rule is used: the LTP term involves a slow post-synaptic trace (<code>post2</code>), making weights sensitive to recent post-synaptic history.</p>
+  </div>
+
+  <p>Three exponentially-decaying traces are maintained (provided in the model string):</p>
+  <table>
+    <thead><tr><th>Trace</th><th>Resets to 1 when…</th><th>Time constant</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td><code>pre</code></td><td>pre neuron fires</td><td>TAU_STDP_PRE (20 ms)</td><td>LTP</td></tr>
+      <tr><td><code>post1</code></td><td>post neuron fires</td><td>TAU_POST1 (20 ms)</td><td>LTD</td></tr>
+      <tr><td><code>post2</code></td><td>post neuron fires</td><td>TAU_POST2 (40 ms)</td><td>LTP (slow)</td></tr>
+    </tbody>
+  </table>
+
+  <h4>On Pre (pre neuron fires)</h4>
+  <ol>
+    <li>Deliver synaptic current: <code>ge_post += w</code></li>
+    <li>Reset pre-trace: <code>pre = 1</code></li>
+    <li>Apply LTD: <code>w = clip(w − LTD_RATE × post1, W_MIN, W_MAX)</code></li>
+  </ol>
+
+  <h4>On Post (post neuron fires)</h4>
+  <ol>
+    <li>Snapshot slow trace: <code>post2before = post2</code></li>
+    <li>Apply LTP: <code>w = clip(w + LTP_RATE × pre × post2before, W_MIN, W_MAX)</code></li>
+    <li>Reset both post-traces: <code>post1 = 1</code>, <code>post2 = 1</code></li>
+  </ol>
+
+  <h4>Steps to implement</h4>
+  <ul class="steps">
+    <li><span class="step-num">a</span><div><strong>Create <code>input_group</code></strong>: a <code>PoissonGroup</code> with <code>N_INPUT</code> neurons, rates starting at <code>0*Hz</code>.</div></li>
+    <li><span class="step-num">b</span><div><strong>Write <code>stdp_on_pre</code></strong> — three lines: conductance update, pre-trace reset, LTD weight update.</div></li>
+    <li><span class="step-num">c</span><div><strong>Write <code>stdp_on_post</code></strong> — four lines: snapshot post2, LTP update, reset post1, reset post2.</div></li>
+    <li><span class="step-num">d</span><div><strong>Create <code>Synapses</code></strong> connecting <code>input_group → exc_neurons</code> with the model and on_pre/on_post strings.</div></li>
+    <li><span class="step-num">e</span><div><strong>Connect all-to-all</strong> with <code>stdp_synapses.connect()</code> and <strong>initialise weights</strong> using the formula above.</div></li>
+  </ul>
+</div>
+
+<!-- TODO 4 -->
+<div class="todo">
+  <div class="todo-header">
+    <span class="todo-title">TODO 4 — Fixed Synapses: Excitatory ↔ Inhibitory</span>
+    <span class="marks-badge">5 marks</span>
+  </div>
+
+  <p>Two fixed (non-plastic) synapse objects implement the winner-take-all circuit. These weights never change during training.</p>
+
+  <div class="callout bio">
+    <div class="callout-title">Why i ≠ j?</div>
+    <p>When excitatory neuron <em>j</em> fires, it activates inhibitory neuron <em>j</em>. That inhibitory neuron then suppresses all excitatory neurons <em>except j itself</em> — the winner is not penalised, only the competitors are. This creates clean winner-take-all dynamics.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ SECTION 4 -->
+<h2 class="section">Section 4: Training <span class="todo-tag">TODO</span></h2>
+<p>The network assembly (Cell 10) and <code>normalize_weights()</code> helper are <span class="provided-tag">PROVIDED</span>. Also, assigning the labels cell is <span class="provided-tag">PROVIDED</span> (cell 12). <strong>Your task is the training loop.</strong></p>
+
+<!-- TODO 5 -->
+<div class="todo">
+  <div class="todo-header">
+    <span class="todo-title">TODO 5 — Training Loop</span>
+    <span class="marks-badge">15 marks</span>
+  </div>
+
+  <h4>Training Pipeline (per image)</h4>
+  <ul class="steps">
+    <li><span class="step-num">1</span><div><strong>Weight normalisation</strong> — rescale input→excitatory weights before each image (see below)</div></li>
+    <li><span class="step-num">2</span><div><strong>Rate encoding</strong> — convert pixel values to Poisson firing rates: <code>rates_hz = X_train[i] / 8.0 × input_intensity</code></div></li>
+    <li><span class="step-num">3</span><div><strong>Presentation</strong> — set <code>input_group.rates = rates_hz * Hz</code>, run for <code>PRESENTATION_TIME</code> ms; STDP updates happen continuously</div></li>
+    <li><span class="step-num">4</span><div><strong>Rest period</strong> — set rates to <code>0*Hz</code>, run for <code>REST_TIME</code> ms; synaptic traces decay toward zero</div></li>
+    <li><span class="step-num">5</span><div><strong>Spike check</strong> — if total spikes &lt; threshold, boost intensity and retry the same image</div></li>
+  </ul>
+
+  <h4>Steps to implement</h4>
+  <ul class="steps">
+    <li><span class="step-num">a</span><div>Compute <code>rates_hz = X_train[i] / 8.0 * input_intensity</code></div></li>
+    <li><span class="step-num">b</span><div>Set <code>input_group.rates = rates_hz * Hz</code></div></li>
+    <li><span class="step-num">c</span><div>Run <code>net.run(PRESENTATION_TIME * ms)</code></div></li>
+    <li><span class="step-num">d</span><div>Record spikes: <code>current_spike_count = np.array(spike_mon.count) − previous_spike_count</code></div></li>
+    <li><span class="step-num">e</span><div>Set <code>input_group.rates = 0*Hz</code>, then run <code>net.run(REST_TIME * ms)</code></div></li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════ SECTION 5 -->
+<h2 class="section">Section 5: Testing <span class="todo-tag">TODO</span></h2>
+
+<!-- TODO 6 -->
+<div class="todo">
+  <div class="todo-header">
+    <span class="todo-title">TODO 6 — Test Phase</span>
+    <span class="marks-badge">15 marks</span>
+  </div>
+
+  <p>After training, neuron labels are assigned (provided) and the network is evaluated on unseen test images. STDP must be disabled so learned weights are frozen.</p>
+
+  <h4>How Classification Works</h4>
+  <p>After training, each excitatory neuron is assigned to the digit class it responded to most (on average) during training. At test time:</p>
+  <ol>
+    <li>Present test image → record which neurons fired and how many times</li>
+    <li>For each digit class, sum the spike counts of all neurons assigned to that class</li>
+    <li>Predict the class with the highest total activity</li>
+  </ol>
+
+  <h4>Steps to implement</h4>
+  <ul class="steps">
+    <li><span class="step-num">a</span><div><strong>Disable STDP</strong> — set LTP and LTD rates to zero:<br>
+      <code>stdp_synapses.namespace['LTP_RATE'] = 0.0</code><br>
+      <code>stdp_synapses.namespace['LTD_RATE'] = 0.0</code>
+    </div></li>
+    <li><span class="step-num">b</span><div>Compute <code>rates_hz</code> from <code>X_test[i]</code> (same formula as training)</div></li>
+    <li><span class="step-num">c</span><div>Set <code>input_group.rates = rates_hz * Hz</code></div></li>
+    <li><span class="step-num">d</span><div>Run <code>net.run(PRESENTATION_TIME * ms)</code></div></li>
+    <li><span class="step-num">e</span><div>Use <code>predict_from_spikes(spike_counts_test, assignments)</code> and <code>compute_accuracy(y_test, predictions)</code>, then print the result</div></li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════ SECTION 6 -->
+<h2 class="section">Section 6: Visualisation <span class="provided-tag">PROVIDED</span></h2>
+
+<!-- Visualisation -->
+<div class="todo">
+  <div class="todo-header">
+    <span class="todo-title">Visualisation — Plots</span>
+    <span class="marks-badge">5 marks</span>
+  </div>
+
+  <p>The plotting functions are provided — call them to produce the two plots below.</p>
+
+  <h4>Spike Raster &amp; Firing Rate Distribution (2 marks)</h4>
+  <div class="question">
+    <div class="q-label">Observe</div>
+    <p>Does your raster plot show <em>sparse</em> activity (only a few neurons firing per image) or <em>dense</em> activity (most neurons firing)? What does this tell you about whether winner-take-all inhibition is working?</p>
+  </div>
+
+  <h4>Weight Receptive Fields (3 marks)</h4>
+  <p>Each excitatory neuron has 784 incoming weights — one per input pixel. Reshaped to 28×28, these form a <em>receptive field</em>: what pattern does this neuron respond to most strongly?</p>
+  <div class="question">
+    <div class="q-label">Observe</div>
+    <p>What you see in the receptive field plots:</p>
+    <ul style="margin-top:6px;">
+      <li><strong>If neurons show digit-like patterns:</strong> Understand how STDP caused inputs that co-activate with a digit to have their weights strengthened while others were weakened.</li>
+      <li><strong>If neurons show no clear structure (uniform colours):</strong> Think what likely went wrong (e.g. too few training images, a bug in STDP, incorrect weight initialisation).</li>
+    </ul>
+    <p style="margin-top:8px; font-style:italic;">Either outcome is acceptable — you are graded on the quality of your interpretation, not on whether receptive fields look perfect.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ SECTION 7 -->
+<h2 class="section">Section 7: Written Analysis</h2>
+
+<div class="todo">
+  <div class="todo-header">
+    <span class="todo-title">TODO 7 — Written Analysis</span>
+    <span class="marks-badge">15 marks</span>
+  </div>
+  <p>Answer each question in a <strong>Markdown cell</strong> in the notebook.</p>
+</div>
+
+<div class="question">
+  <div class="q-label">Q1 — Adaptive Threshold (3 marks)</div>
+  <p>What does the theta variable (θ) do during training? Explain its role as an intrinsic plasticity mechanism and how it prevents any single neuron from dominating the network.</p>
+</div>
+
+<div class="question">
+  <div class="q-label">Q2 — LTP/LTD Asymmetry (3 marks)</div>
+  <p>In <code>config.py</code>, <code>LTP_RATE = 0.01</code> and <code>LTD_RATE = 0.0001</code> — LTP is 100× stronger than LTD. Why is this asymmetry necessary? What would happen to the weights if <code>LTP_RATE = LTD_RATE = 0.005</code>?</p>
+</div>
+
+<div class="question">
+  <div class="q-label">Q3 — Receptive Field Interpretation (3 marks)</div>
+  <p>Describe what you observe in your receptive field plots (Section 6). If you see digit-like structure, explain how STDP produced it. If you do <em>not</em> see clear structure, explain what went wrong and what specific change would produce better results.</p>
+</div>
+
+<div class="question">
+  <div class="q-label">Q4 — Accuracy &amp; Improvement (3 marks)</div>
+  <p>State your test accuracy. Suggest <strong>one specific</strong> change to the network or training procedure (e.g. a parameter, architecture change, or longer training) and explain with biological reasoning why it would improve performance.</p>
+</div>
+
+<div class="question">
+  <div class="q-label">Q5 — STDP vs Hebbian Learning (3 marks)</div>
+  <p>In Week 7 you implemented Hebbian learning: weights increased when pre- and post-synaptic neurons were active at the same time. STDP also changes weights based on neural activity — but it is fundamentally different. What is the key difference, and why does that difference matter for learning <em>causal</em> relationships?</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ FOOTER -->
+<hr style="border:none;border-top:2px solid var(--border);margin:40px 0 16px;">
+<div style="display:flex;justify-content:space-between;font-family:'Inter',sans-serif;font-size:9pt;color:#9ca3af;">
+  <span>IT5092 — Neuroscience &amp; Neurocomputing</span>
+  <span>Assignment: SNN for MNIST | 100 marks</span>
+</div>
+
+</body>
+</html>
